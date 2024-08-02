@@ -1,4 +1,4 @@
-# seekingalpha_twitter_stock
+# seekingalpha_twitter_stock_analyzer
 
 
 This tool performs sentiment analysis and extracts insights from financial articles and tweets for a given stock ticker. It utilizes various APIs and machine learning models to provide a comprehensive analysis.
