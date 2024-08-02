@@ -1,7 +1,5 @@
 # Import necessary libraries and modules
 import requests
-
-gemini_api_key = 'AIzaSyCE9RhflGUGJpNg6DsLo2obVCGDP_HHVAo'
 from llama_index.llms.gemini import Gemini
 from llama_index.core import PromptTemplate
 import dspy
@@ -10,7 +8,6 @@ import joblib
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
 
-tlm_api = '8261f90727b844f59aae76a5788554b9'
 from cleanlab_studio import Studio
 from joblib import Parallel, delayed
 import time
@@ -34,6 +31,10 @@ from llama_index.core.agent import ReActAgent
 from dspy import InputField, OutputField, Signature
 from dspy.functional import TypedChainOfThought
 from pydantic import BaseModel
+
+gemini_api_key = 'gemini_api_key_here'
+tlm_api = 'tlm_api_key_here'
+
 
 # Set environment variables for API keys and configurations
 if "GOOGLE_API_KEY" not in os.environ:
