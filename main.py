@@ -256,22 +256,25 @@ def setup_RAG_pipeline(out_clean_article_list):
     print(res.response)
     print("----------------")
 
-    # tool = QueryEngineTool.from_defaults(
-    #     raw_query_engine, name="rag_tool", description="Provides recent financial analysis about AMD."
-    #                                                    "Use a detailed plain text question as input to the tool.",
-    #     return_direct=True
-    # )
-    # agent = ReActAgent.from_tools([tool], llm=llm_gemini, verbose=True)
-    #
-    # res = agent.chat("What are some bullish arguments mentioned in the articles?")
-    # print(res.response)
-    # print("----------------")
-    # res = agent.chat("What are some bearish arguments mentioned in the articles?")
-    # print(res.response)
-    # print("----------------")
-    # res = agent.chat("What are some bullish catalysts mentioned in the articles?")
-    # print(res.response)
-    # print("----------------")
+
+def define_stock_analyzer_agent(raw_query_engine):
+    tool = QueryEngineTool.from_defaults(
+        raw_query_engine, name="rag_tool", description="Provides recent financial analysis about AMD."
+                                                       "Use a detailed plain text question as input to the tool.",
+     return_direct=True
+    )
+    agent = ReActAgent.from_tools([tool], llm=llm_gemini, verbose=True)
+
+    res = agent.chat("What are some bullish arguments mentioned in the articles?")
+    print(res.response)
+    print("----------------")
+    res = agent.chat("What are some bearish arguments mentioned in the articles?")
+    print(res.response)
+    print("----------------")
+    res = agent.chat("What are some bullish catalysts mentioned in the articles?")
+    print(res.response)
+    print("----------------")
+
 
 # Function to initialize Gemini LLM
 def get_llamaindex_gemini():
