@@ -1,3 +1,16 @@
+ Import necessary libraries and modules
+
+"""
+This module provides functions for analyzing stock-related data from various sources
+including Seeking Alpha and Twitter. It includes tools for fetching articles,
+extracting text, performing sentiment analysis, and setting up a RAG (Retrieval-Augmented Generation) pipeline.
+
+Requirements:
+- Python libraries: requests, BeautifulSoup, joblib, llama_index, dspy
+- API keys for Seeking Alpha, Twitter, and Gemini
+"""
+
+
 # Import necessary libraries and modules
 import requests
 from llama_index.llms.gemini import Gemini
@@ -66,14 +79,23 @@ SAFE = [
     },
 ]
 
+
+
 # Function to get Seeking Alpha article IDs for a given stock ticker
-def get_seeking_alpha_article_ids(stock_ticker="amd", number_of_items=str(10)):
+def get_seeking_alpha_article_ids(stock_ticker="sofi", number_of_items=str(10)):
+    """
+    Fetches article IDs from Seeking Alpha for a given stock ticker.
+
+    :param stock_ticker: Stock symbol to search for (default: "sofi")
+    :param number_of_items: Number of articles to retrieve (default: "10")
+    :return: List of article IDs
+    """
     url = "https://seeking-alpha.p.rapidapi.com/analysis/v2/list"
 
     querystring = {"id": stock_ticker, "size": number_of_items, "number": "1"}
 
     headers = {
-        "x-rapidapi-key": rapidapi_key,
+        "x-rapidapi-key": "799f09a0f2msh88cbc5a33cc1067p1d87e3jsne229a1e7c05c",
         "x-rapidapi-host": "seeking-alpha.p.rapidapi.com"
     }
 
@@ -85,14 +107,22 @@ def get_seeking_alpha_article_ids(stock_ticker="amd", number_of_items=str(10)):
 
     return id_list
 
+
 # Function to extract Twitter data for a given stock ticker
-def twitter_data_extractor(stock_ticker="amd"):
+def twitter_data_extractor(stock_ticker="sofi"):
+    """
+    Extracts recent tweets related to a given stock ticker.
+
+    :param stock_ticker: Stock symbol to search for (default: "sofi")
+    :return: String containing formatted tweets
+    """
+
     url = "https://twitter154.p.rapidapi.com/search/search"
 
     querystring = {"query": "$" + stock_ticker, "section": "top", "min_likes": "5", "limit": "20",
                    "start_date": "2023-06-01", "language": "en"}
     headers = {
-        "x-rapidapi-key": rapidapi_key,
+        "x-rapidapi-key": "799f09a0f2msh88cbc5a33cc1067p1d87e3jsne229a1e7c05c",
         "x-rapidapi-host": "twitter154.p.rapidapi.com"
     }
 
@@ -108,12 +138,20 @@ def twitter_data_extractor(stock_ticker="amd"):
     single_str_prompt = "\n".join(clean_text_list)
     return single_str_prompt
 
+
 # Function to extract article text from Seeking Alpha
 def article_text_extraction(id_list):
+    """
+    Extracts the full text of articles from Seeking Alpha given a list of article IDs.
+
+    :param id_list: List of article IDs
+    :return: List of article texts
+    """
+
     url = "https://seeking-alpha.p.rapidapi.com/analysis/v2/get-details"
 
     headers = {
-        "x-rapidapi-key": rapidapi_key,
+        "x-rapidapi-key": "799f09a0f2msh88cbc5a33cc1067p1d87e3jsne229a1e7c05c",
         "x-rapidapi-host": "seeking-alpha.p.rapidapi.com"
     }
 
@@ -127,22 +165,41 @@ def article_text_extraction(id_list):
         article_text_list.append(soup.get_text().strip())
     return article_text_list
 
+
 # Function to save new article data
-def save_new_article_data():
+def save_new_article_data(stock_ticker):
+    """
+    Fetches new article data and saves it to a file.
+    """
+
     id_list = get_seeking_alpha_article_ids()
     article_text_list = article_text_extraction(id_list)
 
-    with open('amd_article_data.joblib', 'wb') as f:  # with statement avoids file leak
+    with open(stock_ticker + '_article_data.joblib', 'wb') as f:  # with statement avoids file leak
         joblib.dump(article_text_list, f)
 
+
 # Function to load saved article data
-def load_article_data():
-    with open('amd_article_data.joblib', 'rb') as f:  # with statement avoids file leak
+def load_article_data(stock_ticker):
+    """
+    Loads previously saved article data from a file.
+
+    :return: List of article texts
+    """
+    with open(stock_ticker + '_article_data.joblib', 'rb') as f:  # with statement avoids file leak
         article_text_list = joblib.load(f)
     return article_text_list
 
+
 # Function to analyze Twitter sentiment
-def twitter_sentiment_breakdown(single_str_prompt, ticker='AMD'):
+def twitter_sentiment_breakdown(single_str_prompt, ticker='sofi'):
+    """
+    Analyzes sentiment of tweets related to a given stock ticker.
+
+    :param single_str_prompt: String containing formatted tweets
+    :param ticker: Stock ticker symbol (default: 'sofi')
+    """
+
     template = (
             "This is a collection of tweets of " + ticker + " stock:"
                                                             "\n"
@@ -162,8 +219,16 @@ def twitter_sentiment_breakdown(single_str_prompt, ticker='AMD'):
     response = classify(question=prompt)
     print(response.answer)
 
+
 # Function to sanitize text using LLM
 def sanitize_text_for_yaml_using_LLM(text, llm):
+    """
+    Sanitizes text using a language model to ensure it is clean.
+
+    :param text: Input text to sanitize
+    :param llm: Language model to use for sanitization
+    :return: Sanitized text
+    """
     template_2 = (
         "This is a financial analysis text:"
         "\n"
@@ -180,8 +245,17 @@ def sanitize_text_for_yaml_using_LLM(text, llm):
     out = llm.complete(prompt)
     return out.text
 
+
 # Function to extract price target from text
 def extract_price_target(text, llm):
+    """
+    Extracts the price target from a given financial analysis text.
+
+    :param text: Financial analysis text
+    :param llm: Language model to use for extraction
+    :return: Extracted price target or -1 if not found
+    """
+
     template = (
         "This is a financial analysis text:"
         "\n"
@@ -197,8 +271,17 @@ def extract_price_target(text, llm):
     response = classify(text=prompt)
     return response.result
 
+
 # Function to analyze Seeking Alpha articles
-def seeking_alpha_article_breakdown(single_article_text, llm, ticker='AMD'):
+def seeking_alpha_article_breakdown(single_article_text, ticker='AMD'):
+    """
+    Analyzes a Seeking Alpha article to determine sentiment and extract price target.
+
+    :param single_article_text: Text of the Seeking Alpha article
+    :param llm: Language model to use for analysis
+    :param ticker: Stock ticker symbol (default: 'AMD')
+    :return: Analysis result
+    """
     template = (
             "This is a financial analysis of the stock " + ticker + ":"
                                                                     "\n"
@@ -216,8 +299,15 @@ def seeking_alpha_article_breakdown(single_article_text, llm, ticker='AMD'):
     response = classify(question=prompt)
     return response.answer
 
+
 # Function to set up and run RAG pipeline
 def setup_RAG_pipeline(out_clean_article_list):
+    """
+    Sets up and runs a Retrieval-Augmented Generation (RAG) pipeline for financial analysis.
+
+    :param out_clean_article_list: List of cleaned article texts
+    :return: Query engine for RAG
+    """
     text_list = out_clean_article_list
     documents = [Document(text=t) for t in text_list]
 
@@ -255,13 +345,19 @@ def setup_RAG_pipeline(out_clean_article_list):
         "As a financial analyst, how would you interpret the overall sentiment in the articles?")
     print(res.response)
     print("----------------")
+    return raw_query_engine
 
 
 def define_stock_analyzer_agent(raw_query_engine):
+    """
+    Defines and initializes a stock analyzer agent using the RAG query engine.
+
+    :param raw_query_engine: Query engine from the RAG pipeline
+    """
     tool = QueryEngineTool.from_defaults(
         raw_query_engine, name="rag_tool", description="Provides recent financial analysis about AMD."
                                                        "Use a detailed plain text question as input to the tool.",
-     return_direct=True
+        return_direct=True
     )
     agent = ReActAgent.from_tools([tool], llm=llm_gemini, verbose=True)
 
@@ -287,8 +383,10 @@ def get_llamaindex_gemini():
 # Main execution block
 if __name__ == "__main__":
     # Flag to determine whether to use saved file or fetch new data
-    use_saved_file = False
-
+    use_saved_file = True
+    get_new_article_data = False
+    # save_new_article_data()
+    stock_ticker = 'acmr'
     # Initialize Gemini model for natural language processing tasks
     gemini = dspy.Google(model="models/gemini-1.0-pro", api_key=gemini_api_key, safety_settings=SAFE,
                          max_output_tokens=10000)
@@ -296,18 +394,21 @@ if __name__ == "__main__":
 
     # Analyze Twitter sentiment
     print("Top Tweet Sentiment Breakdown")
-    single_str_prompt = twitter_data_extractor()  # Extract tweets about the stock
-    twitter_sentiment_breakdown(single_str_prompt)  # Analyze sentiment of tweets
+    single_str_prompt = twitter_data_extractor(stock_ticker=stock_ticker)  # Extract tweets about the stock
+    twitter_sentiment_breakdown(single_str_prompt, ticker=stock_ticker)  # Analyze sentiment of tweets
     print("-----------------")
 
     # Load article data from file
-    article_data = load_article_data()
+    if get_new_article_data:
+        save_new_article_data(stock_ticker)
+
+    article_data = load_article_data(stock_ticker)
 
     # Initialize Gemini LLM for article analysis
     llm_gemini = get_llamaindex_gemini()
 
     # Pause to avoid hitting API rate limits
-    time.sleep(10)
+    time.sleep(20)
 
     # Use parallel processing for faster execution
     with Parallel(n_jobs=-1, backend='threading') as parallel:
@@ -315,14 +416,19 @@ if __name__ == "__main__":
             # Clean and sanitize article data using LLM
             out_clean_article_list = parallel(
                 (delayed(sanitize_text_for_yaml_using_LLM)(set, llm_gemini) for set in article_data))
+
+            with open(stock_ticker + '_article_data_clean.joblib', 'wb') as f:
+                joblib.dump(out_clean_article_list, f)
+
         else:
             # Load pre-cleaned article data from file
-            with open('amd_article_data_clean.joblib', 'rb') as f:
+            with open(stock_ticker +'_article_data_clean.joblib', 'rb') as f:
                 out_clean_article_list = joblib.load(f)
 
+        time.sleep(40)
         # Analyze articles in parallel
         article_break_down_result = parallel(
-            (delayed(seeking_alpha_article_breakdown)(single_article_text, llm_gemini) for single_article_text in
+            (delayed(seeking_alpha_article_breakdown)(single_article_text, stock_ticker) for single_article_text in
              out_clean_article_list))
 
         # Pause to avoid hitting API rate limits
@@ -334,8 +440,8 @@ if __name__ == "__main__":
     # Filter and process price targets
     filtered = []
     for res in price_target_list:
-        if int(res) > -1:
-            filtered.append(int(res))
+        if float(res) > -1:
+            filtered.append(float(res))
 
     # Calculate and display mean price target
     print("Seeking Alpha Mean Price Target")
@@ -352,4 +458,3 @@ if __name__ == "__main__":
     print("Seeking Alpha RAG")
     print("-----------------")
     setup_RAG_pipeline(out_clean_article_list)
-
