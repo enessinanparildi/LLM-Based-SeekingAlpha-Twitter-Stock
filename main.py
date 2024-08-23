@@ -1,4 +1,3 @@
- Import necessary libraries and modules
 
 """
 This module provides functions for analyzing stock-related data from various sources
@@ -95,7 +94,7 @@ def get_seeking_alpha_article_ids(stock_ticker="sofi", number_of_items=str(10)):
     querystring = {"id": stock_ticker, "size": number_of_items, "number": "1"}
 
     headers = {
-        "x-rapidapi-key": "799f09a0f2msh88cbc5a33cc1067p1d87e3jsne229a1e7c05c",
+        "x-rapidapi-key": rapidapi_key,
         "x-rapidapi-host": "seeking-alpha.p.rapidapi.com"
     }
 
@@ -122,7 +121,7 @@ def twitter_data_extractor(stock_ticker="sofi"):
     querystring = {"query": "$" + stock_ticker, "section": "top", "min_likes": "5", "limit": "20",
                    "start_date": "2023-06-01", "language": "en"}
     headers = {
-        "x-rapidapi-key": "799f09a0f2msh88cbc5a33cc1067p1d87e3jsne229a1e7c05c",
+        "x-rapidapi-key": rapidapi_key,
         "x-rapidapi-host": "twitter154.p.rapidapi.com"
     }
 
@@ -151,7 +150,7 @@ def article_text_extraction(id_list):
     url = "https://seeking-alpha.p.rapidapi.com/analysis/v2/get-details"
 
     headers = {
-        "x-rapidapi-key": "799f09a0f2msh88cbc5a33cc1067p1d87e3jsne229a1e7c05c",
+        "x-rapidapi-key": rapidapi_key,
         "x-rapidapi-host": "seeking-alpha.p.rapidapi.com"
     }
 
