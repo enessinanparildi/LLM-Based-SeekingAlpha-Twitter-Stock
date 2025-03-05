@@ -298,6 +298,42 @@ def seeking_alpha_article_breakdown(single_article_text, ticker='AMD'):
     response = classify(question=prompt)
     return response.answer
 
+def stock_overview(ticker: str) -> str:
+    """
+    Generate a comprehensive overview of a given stock/company.
+
+    This function uses an LLM to provide a detailed analysis of a company, including:
+    - Product offerings
+    - Main competitors
+    - Industry analysis
+    - Market position
+
+    Args:
+        ticker (str): The stock ticker symbol (e.g., 'AAPL', 'GOOGL')
+
+    Returns:
+        str: A detailed overview of the company and its market position
+
+    Example:
+        >>> overview = stock_overview('AAPL')
+        >>> print(overview)
+        'Apple Inc. is a technology company that designs and manufactures...'
+
+    Note:
+        This function uses DSPy's Predict module with a language model to generate
+        the analysis. The quality of the output depends on the model's knowledge
+        and the provided prompt template.
+    """
+    template = (
+        "As a world class financial analyst, give a brief overview of the {context_str} "
+        "stock such as their product offerings, their competitors, the industry. "
+        "This is a ticker traded in the stock market."
+    )
+    qa_template = PromptTemplate(template)
+    prompt = qa_template.format(context_str=ticker)
+    classify = dspy.Predict('text -> result', n=1)
+    response = classify(text=prompt)
+    return response.result
 
 # Function to set up and run RAG pipeline
 def setup_RAG_pipeline(out_clean_article_list):
@@ -391,6 +427,12 @@ if __name__ == "__main__":
                          max_output_tokens=10000)
     dspy.configure(lm=gemini)
 
+    print("Overview")
+    res = stock_overview(stock_ticker)
+    print(res)
+    time.sleep(40)
+
+    
     # Analyze Twitter sentiment
     print("Top Tweet Sentiment Breakdown")
     single_str_prompt = twitter_data_extractor(stock_ticker=stock_ticker)  # Extract tweets about the stock
