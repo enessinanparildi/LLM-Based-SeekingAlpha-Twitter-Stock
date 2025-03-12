@@ -43,10 +43,18 @@ from llama_index.core.agent import ReActAgent
 from dspy import InputField, OutputField, Signature
 from dspy.functional import TypedChainOfThought
 from pydantic import BaseModel
+import mlflow
 
 gemini_api_key = 'gemini_api_key_here'
 tlm_api = 'tlm_api_key_here'
 rapidapi_key = 'rapid_api_key'
+
+mlflow.dspy.autolog()
+mlflow.llama_index.autolog()
+
+mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_experiment("DSPy")
+
 
 
 # Set environment variables for API keys and configurations
