@@ -306,6 +306,23 @@ def seeking_alpha_article_breakdown(single_article_text, ticker='AMD'):
     response = classify(question=prompt)
     return response.answer
 
+def extract_price_target_pydantic(text):
+
+    class ExtractInfo(dspy.Signature):
+        """Extract structured information from text."""
+
+        text: str = dspy.InputField()
+        title: str = dspy.OutputField()
+        timeframe: list[str] = dspy.OutputField()
+        stock_price_target: list[dict[str, int]] = dspy.OutputField(desc="a list of extracted stock price targets from the financial analysis of the given stock")
+
+    module = dspy.Predict(ExtractInfo)
+    response = module(text=text)
+    print(response.title)
+    print(response.timeframe)
+    print(response.stock_price_target)
+
+
 def stock_overview(ticker: str) -> str:
     """
     Generate a comprehensive overview of a given stock/company.
