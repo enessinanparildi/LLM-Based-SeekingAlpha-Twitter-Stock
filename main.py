@@ -408,29 +408,37 @@ def setup_RAG_pipeline(out_clean_article_list):
     return raw_query_engine
 
 
-def define_stock_analyzer_agent(raw_query_engine):
+def define_stock_analyzer_agent(raw_query_engine, stock_symbol):
     """
     Defines and initializes a stock analyzer agent using the RAG query engine.
 
     :param raw_query_engine: Query engine from the RAG pipeline
     """
+
+    tool_spec = YahooFinanceToolSpec()
     tool = QueryEngineTool.from_defaults(
-        raw_query_engine, name="rag_tool", description="Provides recent financial analysis about AMD."
+        raw_query_engine, name="rag_tool", description= f"Provides recent financial analysis about {stock_symbol}."
                                                        "Use a detailed plain text question as input to the tool.",
         return_direct=True
     )
-    agent = ReActAgent.from_tools([tool], llm=llm_gemini, verbose=True)
+    tools = [tool] + tool_spec.to_tool_list()
+    agent = ReActAgent.from_tools(tools, verbose=True)
 
     res = agent.chat("What are some bullish arguments mentioned in the articles?")
     print(res.response)
+    time.sleep(40)
+
     print("----------------")
     res = agent.chat("What are some bearish arguments mentioned in the articles?")
     print(res.response)
+    time.sleep(40)
+
     print("----------------")
     res = agent.chat("What are some bullish catalysts mentioned in the articles?")
     print(res.response)
-    print("----------------")
+    time.sleep(40)
 
+    print("----------------")
 
 # Function to initialize Gemini LLM
 def get_llamaindex_gemini():
