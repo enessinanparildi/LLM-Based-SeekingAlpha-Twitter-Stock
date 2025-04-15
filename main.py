@@ -280,7 +280,7 @@ def extract_price_target(text, llm):
 
 
 # Function to analyze Seeking Alpha articles
-def seeking_alpha_article_breakdown(single_article_text, ticker='AMD'):
+async def seeking_alpha_article_breakdown(single_article_text, ticker="AMD"):
     """
     Analyzes a Seeking Alpha article to determine sentiment and extract price target.
 
@@ -290,37 +290,39 @@ def seeking_alpha_article_breakdown(single_article_text, ticker='AMD'):
     :return: Analysis result
     """
     template = (
-            "This is a financial analysis of the stock " + ticker + ":"
-                                                                    "\n"
-                                                                    "{context_str}"
-                                                                    "\n"
-                                                                    "As a world class financial analyst, analyze this text to determine whether the author is bullish, bearish or neutral."
-                                                                    "Extract the price target if it exists in the text."
-
+        "This is a financial analysis of the stock " + ticker + ":"
+        "\n"
+        "{context_str}"
+        "\n"
+        "As a world class financial analyst, analyze this text to determine whether the author is bullish, bearish or neutral."
+        "For each tweet break it down. Give it as a list. Only return the answer and a short reasoning."
     )
 
     qa_template = PromptTemplate(template)
     prompt = qa_template.format(context_str=single_article_text)
 
-    classify = dspy.ChainOfThought('question -> answer', n=1)
+    classify = dspy.ChainOfThought("question -> answer", n=1)
     response = classify(question=prompt)
     return response.answer
 
-def extract_price_target_pydantic(text):
 
+async def extract_price_target_pydantic(text):
     class ExtractInfo(dspy.Signature):
         """Extract structured information from text."""
 
         text: str = dspy.InputField()
         title: str = dspy.OutputField()
         timeframe: list[str] = dspy.OutputField()
-        stock_price_target: list[dict[str, int]] = dspy.OutputField(desc="a list of extracted stock price targets from the financial analysis of the given stock")
+        stock_price_target: list[dict[str, int]] = dspy.OutputField(
+            desc="a list of extracted stock price targets from the financial analysis of the given stock"
+        )
 
     module = dspy.Predict(ExtractInfo)
     response = module(text=text)
     print(response.title)
     print(response.timeframe)
     print(response.stock_price_target)
+    return response.stock_price_target
 
 
 def stock_overview(ticker: str) -> str:
@@ -447,6 +449,62 @@ def get_llamaindex_gemini():
                         max_tokens=10000)
     return llm_gemini
 
+def parellel_llm_calling_block(article_data, use_saved_file, stock_ticker):
+
+    with Parallel(n_jobs=-1, backend="threading") as parallel:
+        if use_saved_file:
+            # Clean and sanitize article data using LLM
+            out_clean_article_list = parallel(
+                (delayed(sanitize_text_for_yaml_using_LLM)(set) for set in article_data)
+            )
+
+            with open(stock_ticker + "_article_data.joblib", "wb") as f:
+                joblib.dump(out_clean_article_list, f)
+
+        else:
+            # Load pre-cleaned article data from file
+            with open(stock_ticker + "_article_data.joblib", "rb") as f:
+                out_clean_article_list = joblib.load(f)
+
+        # Analyze articles in parallel
+        article_break_down_result = parallel(
+            (
+                delayed(seeking_alpha_article_breakdown)(
+                    single_article_text, stock_ticker
+                )
+                for single_article_text in article_data
+            )
+        )
+
+        # Pause to avoid hitting API rate limits
+        # Extract price targets from articles in parallel
+        price_target_list = parallel(
+            (delayed(extract_price_target_pydantic)(set) for set in article_data)
+        )
+
+    return article_break_down_result, price_target_list, out_clean_article_list
+
+
+async def main(article_data):
+    article_break_down_result = await asyncio.gather(
+        *[
+            seeking_alpha_article_breakdown(single_article_text, stock_ticker)
+            for single_article_text in article_data
+        ]
+    )
+
+    # Pause to avoid hitting API rate limits
+    # Extract price targets from articles in parallel
+    price_target_list = await asyncio.gather(
+        *[
+            extract_price_target_pydantic(single_article_text)
+            for single_article_text in article_data
+        ]
+    )
+    return article_break_down_result, price_target_list
+
+
+
 
 # Main execution block
 if __name__ == "__main__":
@@ -463,7 +521,6 @@ if __name__ == "__main__":
     print("Overview")
     res = stock_overview(stock_ticker)
     print(res)
-    time.sleep(40)
 
     
     # Analyze Twitter sentiment
@@ -481,35 +538,7 @@ if __name__ == "__main__":
     # Initialize Gemini LLM for article analysis
     llm_gemini = get_llamaindex_gemini()
 
-    # Pause to avoid hitting API rate limits
-    time.sleep(20)
-
-    # Use parallel processing for faster execution
-    with Parallel(n_jobs=-1, backend='threading') as parallel:
-        if use_saved_file:
-            # Clean and sanitize article data using LLM
-            out_clean_article_list = parallel(
-                (delayed(sanitize_text_for_yaml_using_LLM)(set, llm_gemini) for set in article_data))
-
-            with open(stock_ticker + '_article_data_clean.joblib', 'wb') as f:
-                joblib.dump(out_clean_article_list, f)
-
-        else:
-            # Load pre-cleaned article data from file
-            with open(stock_ticker +'_article_data_clean.joblib', 'rb') as f:
-                out_clean_article_list = joblib.load(f)
-
-        time.sleep(40)
-        # Analyze articles in parallel
-        article_break_down_result = parallel(
-            (delayed(seeking_alpha_article_breakdown)(single_article_text, stock_ticker) for single_article_text in
-             out_clean_article_list))
-
-        # Pause to avoid hitting API rate limits
-        time.sleep(40)
-
-        # Extract price targets from articles in parallel
-        price_target_list = parallel((delayed(extract_price_target)(set, llm_gemini) for set in out_clean_article_list))
+    article_break_down_result, price_target_list = asyncio.run(main(article_data))
 
     # Filter and process price targets
     filtered = []
