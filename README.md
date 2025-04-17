@@ -10,6 +10,7 @@ This tool performs sentiment analysis and extracts insights from financial artic
 - Price target extraction from financial articles
 - RAG (Retrieval-Augmented Generation) pipeline for in-depth article analysis
 - Multi-threaded processing for improved performance
+- MLFlow tracking
 
 ## Dependencies
 
@@ -24,6 +25,7 @@ cleanlab_studio
 pydantic
 transformers
 torch
+mlflow
 
 You'll also need API keys for the following services:
 - Google AI (Gemini)
